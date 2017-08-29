@@ -13,8 +13,11 @@ use OSS\OssClient;
  * User: xing
  * Date: August 29, 2017
  */
-class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectStorage
+class CObjectStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectStorage
 {
+	const OBJECT_TYPE_IMAGE			= 1;	//	image, default
+	const OBJECT_TYPE_FILE			= 2;	//	other type of files
+
 	const DEFAULT_FILE_EXT			= 'jpg';
 	const DEFAULT_JPEG_QUALITY		= 80;
 	const MAX_UPLOAD_FILE_SIZE		= 5 * 1024 * 1024;	//	5M, maximum size of file in bytes allowed to be uploaded
@@ -44,7 +47,8 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 		//
 		//	arrInput	- [in] parameters
 		//				[
-		//					'file',		//	full file name
+		//					'file'	=> '/full/path/to/file',
+		//					'type'	=> self::OBJECT_TYPE_IMAGE, self::OBJECT_TYPE_FILE
 		//				]
 		//	sKey		- [in] key/filename to be stored by
 		//	arrReturnValue	- [out/opt] result info
@@ -53,33 +57,33 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 		if ( ! CLib::IsArrayWithKeys( $arrInput, 'file' ) ||
 			! CLib::IsExistingString( $arrInput[ 'file' ] ) )
 		{
-			return CDeObjectStorageErrCode::ERROR_PARAM_FULL_FILENAME;
+			return CDeObjectStorageErrCode::ERROR_UPLOAD_BY_FILE_PARAM_FFN;
 		}
 
-		$nRet	= CDeObjectStorageErrCode::ERROR_UPLOAD_BY_FILE_FAILED;
-		$sFFN	= $arrInput[ 'file' ];
+		$nRet		= CDeObjectStorageErrCode::ERROR_UPLOAD_BY_FILE_FAILED;
+		$sObjectFile	= CLib::GetVal( $arrInput, 'file', false, null );
+		$nObjectType	= CLib::GetVal( $arrInput, 'type', true, self::OBJECT_TYPE_IMAGE );
 
-		if ( file_exists( $sFFN ) )
+		if ( file_exists( $sObjectFile ) )
 		{
 			//
 			//	try to push local file to oss
 			//
 			$arrOssInfo			= null;
-			$nCallPushLocalFileToOss	= $this->_uploadImage( $sFFN, $sKey, $arrOssInfo );
+			$nCallPushLocalFileToOss	= $this->_uploadObject( $sObjectFile, $nObjectType, $sKey, $arrOssInfo );
 			if ( CConst::ERROR_SUCCESS == $nCallPushLocalFileToOss )
 			{
 				$nRet = CConst::ERROR_SUCCESS;
 				$arrReturnValue = $arrOssInfo;
 			}
-
-			//
-			//	remove local file
-			//
-			@ unlink( $sFFN );
+			else
+			{
+				$nRet = $nCallPushLocalFileToOss;
+			}
 		}
 		else
 		{
-			$nRet = CDeObjectStorageErrCode::ERROR_DOWNLOADED_FILE_NOT_EXIST;
+			$nRet = CDeObjectStorageErrCode::ERROR_UPLOAD_BY_FILE_NOT_EXISTS;
 		}
 
 		return $nRet;
@@ -90,7 +94,8 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 		//
 		//	arrInput	- [in] parameters
 		//				[
-		//					'url',		//	url of source image
+		//					'url'	=> 'url of source image',
+		//					'type'	=> self::OBJECT_TYPE_IMAGE, self::OBJECT_TYPE_FILE
 		//				]
 		//	$sKey		- [in] key/filename to be stored by
 		//	arrReturnValue	- [out/opt] result info
@@ -100,33 +105,47 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 		if ( ! CLib::IsArrayWithKeys( $arrInput, 'url' ) ||
 			! CLib::IsExistingString( $arrInput['url'] ) )
 		{
-			return CDeObjectStorageErrCode::ERROR_PARAM_URL;
+			return CDeObjectStorageErrCode::ERROR_UPLOAD_BY_URL_PARAM_URL;
 		}
 
 		//	...
 		$nRet		= CDeObjectStorageErrCode::ERROR_UPLOAD_BY_URL_FAILED;
-		$sImageUrl	= CLib::GetVal( $arrInput, 'url', false, null );
+		$sObjectUrl	= CLib::GetVal( $arrInput, 'url', false, null );
+		$nObjectType	= CLib::GetVal( $arrInput, 'type', true, self::OBJECT_TYPE_IMAGE );
 		$nTimeout	= 60;
 
 		//
-		//	first, try to download image file to local storage as a valid image file
+		//	first, we try to download the object file to local
 		//
-		$sDownloadedImageFFN	= '';
-		$nCallDownloadImage	= $this->_downloadImage( $sImageUrl, null, $nTimeout, $sDownloadedImageFFN );
-		if ( CConst::ERROR_SUCCESS == $nCallDownloadImage &&
-			CLib::IsExistingString( $sDownloadedImageFFN ) )
+		$sDownloadedFFN		= '';
+		$nCallDownloadFile	= $this->_downloadFile( $sObjectUrl, null, $nTimeout, $sDownloadedFFN );
+		if ( CConst::ERROR_SUCCESS == $nCallDownloadFile &&
+			CLib::IsExistingString( $sDownloadedFFN ) )
 		{
-			$nRet = $this->uploadByFile( [ 'file' => $sDownloadedImageFFN ], $sKey, $arrReturnValue );
+			$nRet = $this->uploadByFile
+			(
+				[
+					'file'	=> $sDownloadedFFN,
+					'type'	=> $nObjectType,
+				],
+				$sKey,
+				$arrReturnValue
+			);
+
+			//
+			//	remove local file
+			//
+			@ unlink( $sDownloadedFFN );
 		}
 		else
 		{
-			$nRet = CDeObjectStorageErrCode::ERROR_FAILED_DOWNLOAD_FILE;
+			$nRet = CDeObjectStorageErrCode::ERROR_UPLOAD_BY_URL_DOWNLOAD_FILE;
 		}
 
 		return $nRet;
 	}
 
-	public function isExistImage( $sKey )
+	public function isExistObject( $sKey )
 	{
 		return false;
 
@@ -139,7 +158,7 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 //		$bRet = false;
 //
 //		//	...
-//		$nErrCode	= CDeObjectStorageErrCode::ERROR_IS_EXIST_FILE_FAILED;
+//		$nErrCode	= CDeObjectStorageErrCode::ERROR_IS_EXIST_OBJECT_FAILED;
 //		$arrConfig	= $this->m_arrOssConfig;
 //
 //		if ( is_array( $arrConfig ) )
@@ -164,7 +183,7 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 	{
 		if ( ! $this->_isValidConfig( $arrConfig ) )
 		{
-			return CDeObjectStorageErrCode::PARSE_CONFIG;
+			return CDeObjectStorageErrCode::ERROR_PARSE_CONFIG_INVALID_CONFIG;
 		}
 
 		//
@@ -181,6 +200,9 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 
 		assert( CLib::IsArrayWithKeys( $this->m_arrOssConfig ) );
 		assert( CLib::IsExistingString( $this->m_sOssDomain ) );
+
+		//	...
+		return CConst::ERROR_SUCCESS;
 	}
 	private function _isValidConfig( $arrConfig )
 	{
@@ -189,6 +211,23 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 			$arrConfig,
 			[ 'access_key_id', 'access_key_secret', 'bucket_name', 'bucket_url', 'http_timeout', 'tcp_connect_timeout', 'file_field', 'access_url' ]
 		);
+	}
+
+	private function _uploadObject( $sLocalFullFilename, $nObjectType, $sKey, & $arrReturnValue = null )
+	{
+		//
+		//	upload object by its type
+		//
+		if ( self::OBJECT_TYPE_IMAGE == $nObjectType )
+		{
+			//	1, image
+			return $this->_uploadImage( $sLocalFullFilename, $sKey, $arrReturnValue );	
+		}
+		else
+		{
+			//	2, other type of file
+			return $this->_uploadImage( $sLocalFullFilename, $sKey, $arrReturnValue );
+		}
 	}
 
 	private function _uploadImage( $sLocalFullFilename, $sKey, & $arrReturnValue = null )
@@ -201,19 +240,19 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 		//
 		if ( ! CLib::IsExistingString( $sLocalFullFilename, true ) )
 		{
-			return CDeObjectStorageErrCode::ERROR_PARAM_LOCAL_FULL_FILENAME;
+			return CDeObjectStorageErrCode::ERROR_UPLOAD_IMAGE_PARAM_LOCAL_FFN;
 		}
 		if ( ! CLib::IsExistingString( $sKey, true ) )
 		{
-			return CDeObjectStorageErrCode::ERROR_PARAM_KEY;
+			return CDeObjectStorageErrCode::ERROR_UPLOAD_IMAGE_PARAM_KEY;
 		}
 		if ( ! file_exists( $sLocalFullFilename ) )
 		{
-			return CDeObjectStorageErrCode::ERROR_LOCAL_FILE_NOT_EXIST;
+			return CDeObjectStorageErrCode::ERROR_UPLOAD_IMAGE_LOCAL_FFN_NOT_EXIST;
 		}
 
 		//	...
-		$nRet	= CDeObjectStorageErrCode::ERROR_UPLOAD_FILE_FAILED;
+		$nRet	= CDeObjectStorageErrCode::ERROR_UPLOAD_IMAGE_FAILED;
 
 		//
 		//	try to convert the image to jpeg format
@@ -238,7 +277,7 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 						}
 						else
 						{
-							$nRet = CDeObjectStorageErrCode::ERROR_BUILD_IMAGE_INFO_RETURN_VALUE;
+							$nRet = CDeObjectStorageErrCode::ERROR_UPLOAD_IMAGE_INVALID_IMAGE_INFO;
 						}
 					}
 					else
@@ -249,7 +288,7 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 				else
 				{
 					//	nCallUploadToOSS
-					$nRet = CDeObjectStorageErrCode::ERROR_FAILED_COSSOPERATE_UPLOADTOOSS;
+					$nRet = CDeObjectStorageErrCode::ERROR_UPLOAD_IMAGE_UPLOAD_FILE_TO_OSS;
 				}
 			}
 			else
@@ -313,7 +352,7 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 		}
 
 		//	...
-		$nRet		= CConst::ERROR_SUCCESS;
+		$nRet		= CDeObjectStorageErrCode::ERROR_UPLOAD_FILE_TO_OSS_FAILED;
 
 		//	...
 		$oOssClient	= $this->_createOssClientInstance();
@@ -361,19 +400,19 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 	{
 		if ( ! CLib::IsExistingString( $sKey, true ) )
 		{
-			return CDeObjectStorageErrCode::ERROR_BUILD_IMAGE_INFO_KEY;
+			return CDeObjectStorageErrCode::ERROR_BUILD_IMAGE_INFO_PARAM_KEY;
 		}
 		if ( ! CLib::IsExistingString( $sLocalFullFilename, true ) )
 		{
-			return CDeObjectStorageErrCode::ERROR_BUILD_IMAGE_INFO_LOCAL_FFN;
+			return CDeObjectStorageErrCode::ERROR_BUILD_IMAGE_INFO_PARAM_LOCAL_FFN;
 		}
 		if ( ! file_exists( $sLocalFullFilename ) )
 		{
-			return CDeObjectStorageErrCode::ERROR_BUILD_IMAGE_INFO_LOCAL_FFN_NOT_EXIST;
+			return CDeObjectStorageErrCode::ERROR_BUILD_IMAGE_INFO_PARAM_LOCAL_FFN_NOT_EXIST;
 		}
 
 		//	...
-		$nRet		= CDeObjectStorageErrCode::ERROR_BUILD_FILE_INFO_FAILED;
+		$nRet		= CDeObjectStorageErrCode::ERROR_BUILD_IMAGE_INFO_FAILED;
 		$sExtension	= $this->_getImageExtension( $sLocalFullFilename );
 		if ( CLib::IsExistingString( $sExtension ) )
 		{
@@ -397,7 +436,7 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 		}
 		else
 		{
-			$nRet = CDeObjectStorageErrCode::ERROR_FAILED_GET_IMAGE_EXTENSION;
+			$nRet = CDeObjectStorageErrCode::ERROR_BUILD_IMAGE_INFO_GET_IMAGE_EXTENSION;
 		}
 
 		return $nRet;
@@ -407,15 +446,15 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 	{
 		if ( ! CLib::IsExistingString( $sFullFilename, true ) )
 		{
-			return CDeObjectStorageErrCode::ERROR_PARAM_FILENAME;
+			return CDeObjectStorageErrCode::ERROR_CHECK_IMAGE_PARAM_FFN;
 		}
 		if ( ! file_exists( $sFullFilename ) )
 		{
-			return CDeObjectStorageErrCode::ERROR_LOCAL_FILE_NOT_EXIST;
+			return CDeObjectStorageErrCode::ERROR_CHECK_IMAGE_LOCAL_FILE_NOT_EXIST;
 		}
 
 		//	...
-		$nRet = CDeObjectStorageErrCode::ERROR_CHECK_FILE_FAILED;
+		$nRet = CDeObjectStorageErrCode::ERROR_CHECK_IMAGE_FAILED;
 
 		if ( filesize( $sFullFilename ) < self::MAX_UPLOAD_FILE_SIZE )
 		{
@@ -425,12 +464,12 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 			}
 			else
 			{
-				$nRet = CDeObjectStorageErrCode::ERROR_INVALID_FILE_TYPE;
+				$nRet = CDeObjectStorageErrCode::ERROR_CHECK_IMAGE_INVALID_FILE_TYPE;
 			}
 		}
 		else
 		{
-			$nRet = CDeObjectStorageErrCode::ERROR_MAX_UPLOAD_FILE_SIZE;
+			$nRet = CDeObjectStorageErrCode::ERROR_CHECK_IMAGE_MAX_UPLOAD_FILE_SIZE;
 		}
 
 		return $nRet;
@@ -441,11 +480,11 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 		if ( ! CLib::IsExistingString( $sSrcFullFilename, true ) ||
 			! file_exists( $sSrcFullFilename ) )
 		{
-			return CDeObjectStorageErrCode::ERROR_PARAM_SRC_FULL_FILENAME;
+			return CDeObjectStorageErrCode::ERROR_CONVERT_IMAGE_TO_JPEG_PARAM_SRC_FFN;
 		}
 		if ( ! is_numeric( $nQuality ) || $nQuality < 0 || $nQuality > 100 )
 		{
-			return CDeObjectStorageErrCode::ERROR_PARAM_JPEG_QUALITY;
+			return CDeObjectStorageErrCode::ERROR_CONVERT_IMAGE_TO_JPEG_PARAM_QUALITY;
 		}
 
 		//	...
@@ -525,7 +564,7 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 					}
 					else
 					{
-						$nRet = CDeObjectStorageErrCode::ERROR_FAILED_SAVE_CONVERTED_IMAGE;
+						$nRet = CDeObjectStorageErrCode::ERROR_CONVERT_IMAGE_TO_JPEG_SAVE;
 					}
 
 					@imagedestroy( $hHandle );
@@ -533,23 +572,23 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 				}
 				else
 				{
-					$nRet = CDeObjectStorageErrCode::ERROR_FAILED_LOAD_IMAGE;
+					$nRet = CDeObjectStorageErrCode::ERROR_CONVERT_IMAGE_TO_JPEG_LOAD_IMAGE;
 				}
 			}
 			else
 			{
-				$nRet = CDeObjectStorageErrCode::ERROR_FAILED_GET_IMAGE_TYPE;
+				$nRet = CDeObjectStorageErrCode::ERROR_CONVERT_IMAGE_TO_JPEG_GET_IMAGE_TYPE;
 			}
 		}
 		catch ( \Exception $e )
 		{
-			$nRet = CDeObjectStorageErrCode::ERROR_FAILED_CONVERTED_IMAGE_EXCEPTION;
+			$nRet = CDeObjectStorageErrCode::ERROR_CONVERT_IMAGE_TO_JPEG_EXCEPTION;
 		}
 
 		return $nRet;
 	}
 
-	private function _downloadImage( $sUrl, $sSpecifiedFilename = null, $nTimeout = 5, & $sReturnValue = null )
+	private function _downloadFile( $sUrl, $sSpecifiedFilename = null, $nTimeout = 5, & $sReturnValue = null )
 	{
 		//
 		//	$sUrl			- [in]
@@ -561,14 +600,14 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 
 		if ( ! CLib::IsExistingString( $sUrl ) )
 		{
-			return CDeObjectStorageErrCode::ERROR_PARAM_DOWNLOAD_FILE_URL;
+			return CDeObjectStorageErrCode::ERROR_DOWNLOAD_FILE_PARAM_URL;
 		}
 
 		$nRet		= CDeObjectStorageErrCode::ERROR_DOWNLOAD_FILE_FAILED;
 		$sReturnValue	= '';
 
 		$sUploadFullFilename		= '';
-		$nCallGetUploadFullFilename	= $this->_getUploadFullFilename( $sSpecifiedFilename, self::DEFAULT_FILE_EXT, $sUploadFullFilename );
+		$nCallGetUploadFullFilename	= $this->_getUploadFFN( $sSpecifiedFilename, self::DEFAULT_FILE_EXT, $sUploadFullFilename );
 		if ( CConst::ERROR_SUCCESS == $nCallGetUploadFullFilename )
 		{
 			$sUrl = str_replace( " ", "%20", $sUrl );
@@ -594,12 +633,12 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 						}
 						else
 						{
-							$nRet = CDeObjectStorageErrCode::ERROR_FAILED_CURL_FILE_PUT_CONTENTS;
+							$nRet = CDeObjectStorageErrCode::ERROR_DOWNLOAD_FILE_SAVE;
 						}
 					}
 					else
 					{
-						$nRet = CDeObjectStorageErrCode::ERROR_FAILED_CURL_STATUS;
+						$nRet = CDeObjectStorageErrCode::ERROR_DOWNLOAD_FILE_CURL_STATUS;
 					}
 
 					curl_close( $ch );
@@ -607,7 +646,7 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 				}
 				else
 				{
-					$nRet = CDeObjectStorageErrCode::ERROR_FAILED_CURL_INIT;
+					$nRet = CDeObjectStorageErrCode::ERROR_DOWNLOAD_FILE_CURL_INIT;
 				}
 			}
 			else
@@ -631,12 +670,12 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 					}
 					else
 					{
-						$nRet = CDeObjectStorageErrCode::ERROR_FAILED_COPY_FILE;
+						$nRet = CDeObjectStorageErrCode::ERROR_DOWNLOAD_FILE_COPY_FILE;
 					}
 				}
 				else
 				{
-					$nRet = CDeObjectStorageErrCode::ERROR_FAILED_STREAM_CONTEXT_CREATE;
+					$nRet = CDeObjectStorageErrCode::ERROR_DOWNLOAD_FILE_STREAM_CONTEXT_CREATE;
 				}
 			}
 		}
@@ -644,7 +683,7 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 		return $nRet;
 	}
 
-	private function _getUploadFullFilename( $sSpecifiedFilename = null, $sExtension = self::DEFAULT_FILE_EXT, & $sReturnValue = null )
+	private function _getUploadFFN( $sSpecifiedFilename = null, $sExtension = self::DEFAULT_FILE_EXT, & $sReturnValue = null )
 	{
 		$nRet			= CDeObjectStorageErrCode::ERROR_GET_UPLOAD_FFN_FAILED;
 		$sReturnValue		= '';
@@ -662,12 +701,12 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 				}
 				else
 				{
-					$nRet = CDeObjectStorageErrCode::ERROR_FAILED_GET_UPLOAD_FILENAME;
+					$nRet = CDeObjectStorageErrCode::ERROR_GET_UPLOAD_FFN_GET_FILENAME;
 				}
 			}
 			else
 			{
-				$nRet = CDeObjectStorageErrCode::ERROR_FAILED_GET_UPLOAD_DIR;
+				$nRet = CDeObjectStorageErrCode::ERROR_GET_UPLOAD_FFN_INVALID_DIR;
 			}
 		}
 		else
@@ -711,12 +750,12 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 			! $this->_isValidFilename( $sSpecifiedFilename ) )
 		{
 			//	invalid filename, so we stop it
-			return CDeObjectStorageErrCode::ERROR_PARAM_SPECIFIED_FILENAME;
+			return CDeObjectStorageErrCode::ERROR_GET_UPLOAD_NAME_PARAM_SPECIFIED_FILENAME;
 		}
 		if ( CLib::IsExistingString( $sExtension, true ) &&
 			! $this->_isAllowedExtension( $sExtension ) )
 		{
-			return CDeObjectStorageErrCode::ERROR_PARAM_EXTENSION;
+			return CDeObjectStorageErrCode::ERROR_GET_UPLOAD_NAME_PARAM_EXTENSION;
 		}
 
 		if ( ! CLib::IsExistingString( $sSpecifiedFilename, true ) )
