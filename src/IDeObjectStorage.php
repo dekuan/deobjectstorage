@@ -11,6 +11,6 @@ interface IDeObjectStorage
 {
 	public function uploadByFile( $arrInput, $sKey, & $arrReturnValue = null );
 	public function uploadByUrl( $arrInput, $sKey, & $arrReturnValue = null );
-	public function isExistImage( $sKey );
+	public function isExistObject( $sKey );
 
 }

@@ -25,7 +25,7 @@ class CDeObjectStorage extends CDeObjectStorageBase implements IDeObjectStorage
 		//
 		$this->m_arrDrivers =
 		[
-			'oss'	=> CImageStorageDriverOSS::class,
+			'oss'	=> CObjectStorageDriverOSS::class,
 		];
 
 		//
@@ -58,14 +58,14 @@ class CDeObjectStorage extends CDeObjectStorageBase implements IDeObjectStorage
 		return $this->m_oInstanceClass->uploadByUrl( $arrInput, $sKey, $arrReturnValue );
 	}
 
-	public function isExistImage( $sKey )
+	public function isExistObject( $sKey )
 	{
 		if ( null == $this->m_oInstanceClass )
 		{
 			return CDeObjectStorageErrCode::ERROR_DRIVER;
 		}
 
-		return $this->m_oInstanceClass->isExistImage( $sKey );
+		return $this->m_oInstanceClass->isExistObject( $sKey );
 	}
 
 
