@@ -17,7 +17,7 @@ class CImageStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectSt
 {
 	const DEFAULT_FILE_EXT			= 'jpg';
 	const DEFAULT_JPEG_QUALITY		= 80;
-	const MAX_UPLOAD_FILE_SIZE		= 10 * 1024 * 1024;	//	2M, maximum size of file in bytes allowed to be uploaded
+	const MAX_UPLOAD_FILE_SIZE		= 5 * 1024 * 1024;	//	5M, maximum size of file in bytes allowed to be uploaded
 	const ALLOWED_IMAGE_TYPE		=
 		[
 			IMAGETYPE_GIF	=> 'gif',
