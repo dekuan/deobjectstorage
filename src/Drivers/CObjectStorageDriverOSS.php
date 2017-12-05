@@ -288,7 +288,8 @@ class CObjectStorageDriverOSS extends CDeObjectStorageBase implements IDeObjectS
 				else
 				{
 					//	nCallUploadToOSS
-					$nRet = CDeObjectStorageErrCode::ERROR_UPLOAD_IMAGE_UPLOAD_FILE_TO_OSS;
+					//$nRet = CDeObjectStorageErrCode::ERROR_UPLOAD_IMAGE_UPLOAD_FILE_TO_OSS;
+					$nRet = $nCallUploadToOSS;
 				}
 			}
 			else
