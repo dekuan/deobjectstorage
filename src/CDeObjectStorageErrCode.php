@@ -3,6 +3,10 @@
 namespace dekuan\deobjectstorage;
 
 
+/**
+ *	Class CDeObjectStorageErrCode
+ *	@package dekuan\deobjectstorage
+ */
 class CDeObjectStorageErrCode
 {
 	const ERROR_DRIVER					= 10;	//	...

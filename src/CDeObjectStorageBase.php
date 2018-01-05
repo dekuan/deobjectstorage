@@ -3,13 +3,13 @@ namespace dekuan\deobjectstorage;
 
 
 /**
- * Created by PhpStorm.
- * User: xing
- * Date: August 29, 2017
+ *	Class CDeObjectStorageBase
+ *	@package dekuan\deobjectstorage
  */
 class CDeObjectStorageBase
 {
 	protected static $g_arrInstances	= [];
+
 
 	public function __construct()
 	{
@@ -18,6 +18,9 @@ class CDeObjectStorageBase
 	{
 	}
 
+	/**
+	 *	@return mixed|null
+	 */
 	final public static function getInstance()
 	{
 		$oRet		= null;
