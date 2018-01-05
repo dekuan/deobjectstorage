@@ -29,7 +29,7 @@ class CDeObjectStorage extends CDeObjectStorageBase implements IDeObjectStorage
 		//
 		$this->m_arrDrivers =
 		[
-			'oss'	=> driver\CDriverOSS::class,
+			'oss'	=> driver\oss\CDriverOSS::class,
 		];
 
 		//
@@ -48,7 +48,7 @@ class CDeObjectStorage extends CDeObjectStorageBase implements IDeObjectStorage
 	 *	@param	array	$arrReturnValue
 	 *	@return	int
 	 */
-	public function uploadByFile( $arrInput, $sKey, & $arrReturnValue = null )
+	public function uploadByFile( $arrInput, $sKey, Array & $arrReturnValue = null )
 	{
 		if ( null == $this->m_oInstanceClass )
 		{
@@ -64,7 +64,7 @@ class CDeObjectStorage extends CDeObjectStorageBase implements IDeObjectStorage
 	 *	@param	array	$arrReturnValue
 	 *	@return	int
 	 */
-	public function uploadByUrl( $arrInput, $sKey, & $arrReturnValue = null )
+	public function uploadByUrl( $arrInput, $sKey, Array & $arrReturnValue = null )
 	{
 		if ( null == $this->m_oInstanceClass )
 		{

@@ -14,16 +14,42 @@ class CDeObjectStorageConst
 	const OBJECT_TYPE_VIDEO			= 3;	//	video
 	const OBJECT_TYPE_AUDIO			= 4;	//	image, default
 
+
 	//	...
 	const DEFAULT_FILE_EXT			= 'jpg';
 	const DEFAULT_JPEG_QUALITY		= 80;
-	const MAX_UPLOAD_FILE_SIZE		= 5 * 1024 * 1024;	//	5M, maximum size of file in bytes allowed to be uploaded
-	const ALLOWED_IMAGE_TYPE		=
+
+	//	...
+	const DEFAULT_MAX_UPLOAD_FILE_SIZE	= 5 * 1024 * 1024;	//	5M, maximum size of file in bytes allowed to be uploaded
+
+
+	//
+	//	image mime type
+	//
+	const DEFAULT_ALLOWED_IMAGE_MIME_TYPE_LIST	=
 		[
-			IMAGETYPE_GIF	=> 'gif',
-			IMAGETYPE_JPEG	=> 'jpg',
-			IMAGETYPE_PNG	=> 'png',
-			IMAGETYPE_BMP	=> 'bmp',
+			"image/x-ms-bmp",		//	bmp
+			"image/gif",			//	gif
+			"image/jpeg",			//	jpg
+			"image/png",			//	png
+			"application/octet-stream",	//	wbm
 		];
+
+	//
+	//	video mime type
+	//
+	const DEFAULT_ALLOWED_VIDEO_MIME_TYPE_LIST	=
+		[
+			'video/mp4'
+		];
+
+	//
+	//	audio mime type
+	//
+	const DEFAULT_ALLOWED_AUDIO_MIME_TYPE_LIST	=
+		[
+			'audio/mpeg'
+		];
+
 
 }

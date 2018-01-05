@@ -1,41 +1,38 @@
 <?php
 
-namespace dekuan\deobjectstorage\driver;
+namespace dekuan\deobjectstorage\driver\oss;
+
+use dekuan\delib\CLib;
+use dekuan\deobjectstorage\CDeObjectStorageConst;
+use dekuan\deobjectstorage\CDeObjectStorageErrCode;
+use dekuan\vdata\CConst;
 
 
 /**
- *	Class CDriverOSSHelperNetwork
+ *	Class CDriverOSSLibNetwork
  *	@package dekuan\deobjectstorage\driver
  */
-class CDriverOSSHelperNetwork
+class CDriverOSSLibNetwork
 {
 	/**
-	 *	@param	string	$sUrl
-	 *	@param	string	$sSpecifiedFilename
-	 *	@param	int	$nTimeout
-	 *	@param	string	$sReturnValue
-	 *	@return int
+	 *	@param	string	$sUrl			[in]
+	 *	@param	string	$sSpecifiedFilename	[in/opt]
+	 *	@param	int	$nTimeout		[in/opt] timeout in seconds
+	 *	@param	string	$sReturnValue		[out/opt] full filename while downloaded successfully
+	 *	@return int				error code
 	 */
 	static function downloadFile( $sUrl, $sSpecifiedFilename = null, $nTimeout = 5, & $sReturnValue = null )
 	{
-		//
-		//	$sUrl			- [in]
-		//	$sSpecifiedFilename	- [in/opt]
-		//	$nTimeout		- [in/opt] timeout in seconds
-		//	$sReturnValue		- [out/opt] full filename while downloaded successfully
-		//	RETURN			- error code
-		//
-
 		if ( ! CLib::IsExistingString( $sUrl ) )
 		{
-			return CDeObjectStorageErrCode::ERROR_DOWNLOAD_FILE_PARAM_URL;
+			return CDeObjectStorageErrCode::ERROR_DOWNLOADFILE_PARAM_URL;
 		}
 
-		$nRet		= CDeObjectStorageErrCode::ERROR_DOWNLOAD_FILE_FAILED;
+		$nRet		= CDeObjectStorageErrCode::ERROR_DOWNLOADFILE_FAILED;
 		$sReturnValue	= '';
 
 		$sUploadFullFilename		= '';
-		$nCallGetUploadFullFilename	= CDriverOSSHelperFs::getUploadFFN
+		$nCallGetUploadFullFilename	= CDriverOSSLibFs::getUploadFFN
 		(
 			$sSpecifiedFilename,
 			CDeObjectStorageConst::DEFAULT_FILE_EXT,
@@ -66,12 +63,12 @@ class CDriverOSSHelperNetwork
 						}
 						else
 						{
-							$nRet = CDeObjectStorageErrCode::ERROR_DOWNLOAD_FILE_SAVE;
+							$nRet = CDeObjectStorageErrCode::ERROR_DOWNLOADFILE_SAVE;
 						}
 					}
 					else
 					{
-						$nRet = CDeObjectStorageErrCode::ERROR_DOWNLOAD_FILE_CURL_STATUS;
+						$nRet = CDeObjectStorageErrCode::ERROR_DOWNLOADFILE_CURL_STATUS;
 					}
 
 					curl_close( $ch );
@@ -79,7 +76,7 @@ class CDriverOSSHelperNetwork
 				}
 				else
 				{
-					$nRet = CDeObjectStorageErrCode::ERROR_DOWNLOAD_FILE_CURL_INIT;
+					$nRet = CDeObjectStorageErrCode::ERROR_DOWNLOADFILE_CURL_INIT;
 				}
 			}
 			else
@@ -103,12 +100,12 @@ class CDriverOSSHelperNetwork
 					}
 					else
 					{
-						$nRet = CDeObjectStorageErrCode::ERROR_DOWNLOAD_FILE_COPY_FILE;
+						$nRet = CDeObjectStorageErrCode::ERROR_DOWNLOADFILE_COPY_FILE;
 					}
 				}
 				else
 				{
-					$nRet = CDeObjectStorageErrCode::ERROR_DOWNLOAD_FILE_STREAM_CONTEXT_CREATE;
+					$nRet = CDeObjectStorageErrCode::ERROR_DOWNLOADFILE_STREAM_CONTEXT_CREATE;
 				}
 			}
 		}

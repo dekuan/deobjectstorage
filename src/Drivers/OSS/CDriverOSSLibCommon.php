@@ -1,6 +1,6 @@
 <?php
 
-namespace dekuan\deobjectstorage\driver;
+namespace dekuan\deobjectstorage\driver\oss;
 
 use dekuan\delib\CLib;
 use dekuan\deobjectstorage\CDeObjectStorageConst;
@@ -9,10 +9,10 @@ use dekuan\vdata\CConst;
 
 
 /**
- *	Class CDriverOSSHelperCommon
+ *	Class CDriverOSSLibCommon
  *	@package dekuan\deobjectstorage\driver
  */
-class CDriverOSSHelperCommon
+class CDriverOSSLibCommon
 {
 	/**
 	 *	@param	string	$sSpecifiedFilename
@@ -23,15 +23,14 @@ class CDriverOSSHelperCommon
 	static function getUploadFilename( $sSpecifiedFilename, $sExtension = CDeObjectStorageConst::DEFAULT_FILE_EXT, & $sReturnValue = null )
 	{
 		if ( CLib::IsExistingString( $sSpecifiedFilename, true ) &&
-			! CDriverOSSHelperCommon::isValidFilename( $sSpecifiedFilename ) )
+			! self::isValidFilename( $sSpecifiedFilename ) )
 		{
 			//	invalid filename, so we stop it
-			return CDeObjectStorageErrCode::ERROR_GET_UPLOAD_NAME_PARAM_SPECIFIED_FILENAME;
+			return CDeObjectStorageErrCode::ERROR_GETUPLOADFILENAME_PARAM_SPECIFIED_FILENAME;
 		}
-		if ( CLib::IsExistingString( $sExtension, true ) &&
-			! CDriverOSSHelperCommon::isAllowedExtension( $sExtension ) )
+		if ( CLib::IsExistingString( $sExtension, true ) )
 		{
-			return CDeObjectStorageErrCode::ERROR_GET_UPLOAD_NAME_PARAM_EXTENSION;
+			return CDeObjectStorageErrCode::ERROR_GETUPLOADFILENAME_PARAM_EXTENSION;
 		}
 
 		if ( ! CLib::IsExistingString( $sSpecifiedFilename, true ) )
@@ -46,17 +45,6 @@ class CDriverOSSHelperCommon
 
 		$sReturnValue = sprintf( "%s.%s", trim( $sSpecifiedFilename ), $sExtension );
 		return CConst::ERROR_SUCCESS;
-	}
-
-	/**
-	 *	@param	string	$sExtension
-	 *	@return bool
-	 */
-	static function isAllowedExtension( $sExtension )
-	{
-		$arrAllowedExtension	= array_values( CDeObjectStorageConst::ALLOWED_IMAGE_TYPE );
-		return ( CLib::IsExistingString( $sExtension, true ) &&
-			in_array( $sExtension, $arrAllowedExtension ) );
 	}
 	
 	
