@@ -5,9 +5,8 @@ use dekuan\delib\CLib;
 
 
 /**
- * Created by PhpStorm.
- * User: xing
- * Date: August 29, 2017
+ *	Class CDeObjectStorage
+ *	@package dekuan\deobjectstorage
  */
 class CDeObjectStorage extends CDeObjectStorageBase implements IDeObjectStorage
 {
@@ -15,6 +14,11 @@ class CDeObjectStorage extends CDeObjectStorageBase implements IDeObjectStorage
 	private $m_arrDrivers		= null;
 
 
+	/**
+	 *	CDeObjectStorage constructor.
+	 *	@param	string	$sDriverName
+	 *	@param	array	$arrConfig
+	 */
 	public function __construct( $sDriverName, $arrConfig )
 	{
 		assert( CLib::IsExistingString( $sDriverName, true ) );
@@ -25,7 +29,7 @@ class CDeObjectStorage extends CDeObjectStorageBase implements IDeObjectStorage
 		//
 		$this->m_arrDrivers =
 		[
-			'oss'	=> CObjectStorageDriverOSS::class,
+			'oss'	=> driver\oss\CDriverOSS::class,
 		];
 
 		//
@@ -38,7 +42,13 @@ class CDeObjectStorage extends CDeObjectStorageBase implements IDeObjectStorage
 	}
 
 
-	public function uploadByFile( $arrInput, $sKey, & $arrReturnValue = null )
+	/**
+	 *	@param	array	$arrInput
+	 *	@param	string	$sKey
+	 *	@param	array	$arrReturnValue
+	 *	@return	int
+	 */
+	public function uploadByFile( $arrInput, $sKey, Array & $arrReturnValue = null )
 	{
 		if ( null == $this->m_oInstanceClass )
 		{
@@ -48,7 +58,13 @@ class CDeObjectStorage extends CDeObjectStorageBase implements IDeObjectStorage
 		return $this->m_oInstanceClass->uploadByFile( $arrInput, $sKey, $arrReturnValue );
 	}
 
-	public function uploadByUrl( $arrInput, $sKey, & $arrReturnValue = null )
+	/**
+	 *	@param	array	$arrInput
+	 *	@param	string	$sKey
+	 *	@param	array	$arrReturnValue
+	 *	@return	int
+	 */
+	public function uploadByUrl( $arrInput, $sKey, Array & $arrReturnValue = null )
 	{
 		if ( null == $this->m_oInstanceClass )
 		{
@@ -58,6 +74,10 @@ class CDeObjectStorage extends CDeObjectStorageBase implements IDeObjectStorage
 		return $this->m_oInstanceClass->uploadByUrl( $arrInput, $sKey, $arrReturnValue );
 	}
 
+	/**
+	 *	@param	string	$sKey
+	 *	@return int
+	 */
 	public function isExistObject( $sKey )
 	{
 		if ( null == $this->m_oInstanceClass )
@@ -69,10 +89,18 @@ class CDeObjectStorage extends CDeObjectStorageBase implements IDeObjectStorage
 	}
 
 
+	
 	////////////////////////////////////////////////////////////////////////////////
 	//	Private
 	//
 
+	
+	/**
+	 *	initialize drivers
+	 * 
+	 *	@param	string	$sDriverName
+	 *	@param	array	$arrConfig
+	 */
 	private function _initDriver( $sDriverName, $arrConfig )
 	{
 		if ( CLib::IsExistingString( $sDriverName ) &&

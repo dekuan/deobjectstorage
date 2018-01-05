@@ -1,16 +1,15 @@
 <?php
+
 namespace dekuan\deobjectstorage;
 
 
 /**
- * Created by PhpStorm.
- * User: xing
- * Date: August 29, 2017
+ *	Interface IDeObjectStorage
+ *	@package dekuan\deobjectstorage
  */
 interface IDeObjectStorage
 {
-	public function uploadByFile( $arrInput, $sKey, & $arrReturnValue = null );
-	public function uploadByUrl( $arrInput, $sKey, & $arrReturnValue = null );
+	public function uploadByFile( $arrInput, $sKey, Array & $arrReturnValue = null );
+	public function uploadByUrl( $arrInput, $sKey, Array & $arrReturnValue = null );
 	public function isExistObject( $sKey );
-
 }
