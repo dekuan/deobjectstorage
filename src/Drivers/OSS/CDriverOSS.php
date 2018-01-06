@@ -120,16 +120,22 @@ class CDriverOSS extends CDeObjectStorageBase implements IDeObjectStorage
 		//
 		$sDownloadedFFN		= '';
 		$nCallDownloadFile	= CDriverOSSLibNetwork::downloadFile( $sObjectUrl, null, $nTimeout, $sDownloadedFFN );
-		if ( CConst::ERROR_SUCCESS == $nCallDownloadFile &&
-			CLib::IsExistingString( $sDownloadedFFN ) )
+		if ( CConst::ERROR_SUCCESS == $nCallDownloadFile )
 		{
-			$arrInput[ 'file' ]	= $sDownloadedFFN;
-			$nRet = $this->uploadByFile
-			(
-				$arrInput,
-				$sKey,
-				$arrReturnValue
-			);
+			if ( CLib::IsExistingString( $sDownloadedFFN ) )
+			{
+				$arrInput[ 'file' ]	= $sDownloadedFFN;
+				$nRet = $this->uploadByFile
+				(
+					$arrInput,
+					$sKey,
+					$arrReturnValue
+				);				
+			}
+			else
+			{
+				$nRet = CDeObjectStorageErrCode::ERROR_UPLOADBYURL_DOWNLOAD_FILE;
+			}
 
 			//
 			//	remove local file
@@ -138,7 +144,7 @@ class CDriverOSS extends CDeObjectStorageBase implements IDeObjectStorage
 		}
 		else
 		{
-			$nRet = CDeObjectStorageErrCode::ERROR_UPLOADBYURL_DOWNLOAD_FILE;
+			$nRet = $nCallDownloadFile;
 		}
 
 		return $nRet;

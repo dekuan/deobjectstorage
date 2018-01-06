@@ -28,7 +28,7 @@ class CDriverOSSLibCommon
 			//	invalid filename, so we stop it
 			return CDeObjectStorageErrCode::ERROR_GETUPLOADFILENAME_PARAM_SPECIFIED_FILENAME;
 		}
-		if ( CLib::IsExistingString( $sExtension, true ) )
+		if ( ! CLib::IsExistingString( $sExtension, true ) )
 		{
 			return CDeObjectStorageErrCode::ERROR_GETUPLOADFILENAME_PARAM_EXTENSION;
 		}
