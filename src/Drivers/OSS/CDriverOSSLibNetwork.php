@@ -109,6 +109,10 @@ class CDriverOSSLibNetwork
 				}
 			}
 		}
+		else
+		{
+			$nRet = $nCallGetUploadFullFilename;
+		}
 
 		return $nRet;
 	}
