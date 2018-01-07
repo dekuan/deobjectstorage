@@ -336,21 +336,22 @@ class CDriverOSS extends CDeObjectStorageBase implements IDeObjectStorage
 		//
 		//	try to convert the image to jpeg format
 		//
-		$nCallConvert = CDriverOSSLibImage::convertImageToJpeg
+		$sLocalNewFullFilename	= sprintf( "%s.dst", $sLocalFullFilename );
+		$nCallConvert		= CDriverOSSLibImage::convertImageToJpeg
 		(
 			$sLocalFullFilename,
-			null,
+			$sLocalNewFullFilename,
 			CDeObjectStorageConst::DEFAULT_JPEG_QUALITY
 		);
 		if ( CConst::ERROR_SUCCESS == $nCallConvert )
 		{
 			//	...
 			$cOSSUploader		= new CDriverOSSUploader( $this->m_arrConfig );
-			$nCallUploadToOSS	= $cOSSUploader->uploadFileToOss( $sKey, $sLocalFullFilename );
+			$nCallUploadToOSS	= $cOSSUploader->uploadFileToOss( $sKey, $sLocalNewFullFilename );
 			if ( 0 == $nCallUploadToOSS )
 			{
 				$arrImgInfo		= [];
-				$nCallBuildImageInfo	= $this->_buildResultInfo( $sKey, $sLocalFullFilename, $arrImgInfo );
+				$nCallBuildImageInfo	= $this->_buildResultInfo( $sKey, $sLocalNewFullFilename, $arrImgInfo );
 				if ( CConst::ERROR_SUCCESS == $nCallBuildImageInfo )
 				{
 					if ( CLib::IsArrayWithKeys( $arrImgInfo ) )
@@ -371,9 +372,12 @@ class CDriverOSS extends CDeObjectStorageBase implements IDeObjectStorage
 			else
 			{
 				//	nCallUploadToOSS
-				//$nRet = CDeObjectStorageErrCode::ERROR_UPLOADOBJECTOFIMAGE_UPLOAD_FILE_TO_OSS;
 				$nRet = $nCallUploadToOSS;
 			}
+
+			//	...
+			@ unlink( $sLocalNewFullFilename );
+			$sLocalNewFullFilename = null;
 		}
 		else
 		{
